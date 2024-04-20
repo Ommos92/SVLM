@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "train",
+                "--conf_files", "SEEM/configs/xdecoder/focall_unicl_lang.yaml",
+                "--user_dir", "results",
+            ],
+            "env": {"CUDA_VISIBLE_DEVICES": "3"}
+        },
+        {     
+            "name": "FastAPI",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "Segment-Everything-Everywhere-All-At-Once.api.model_server:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+            ],
+            "jinja": true
+        }
+    ]
+        
+    
+}

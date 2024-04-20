@@ -1,9 +1,0 @@
-[submodule "PG-Video-LLaVA"]
-	path = PG-Video-LLaVA
-	url = https://github.com/Ommos92/PG-Video-LLaVA.git
-
-[submodule "Video-LLaVA"]
-	path = Video-LLaVA
-	url = https://github.com/mbzuai-oryx/Video-LLaVA
-
-[submodule "Tracking-Anything-with-DEVA"]
