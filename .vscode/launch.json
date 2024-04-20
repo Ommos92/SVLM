@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "SEEM API Server",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -12,6 +12,7 @@
                 "train",
                 "--conf_files", "SEEM/configs/xdecoder/focall_unicl_lang.yaml",
                 "--user_dir", "results",
+                "--pretrain_path", "SEEM/checkpoints/SEEM/xdecoder_focalt_last.pt"
             ],
             "env": {"CUDA_VISIBLE_DEVICES": "3"}
         },
