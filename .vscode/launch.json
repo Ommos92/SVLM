@@ -12,7 +12,6 @@
                 "train",
                 "--conf_files", "SEEM/configs/xdecoder/focall_unicl_lang.yaml",
                 "--user_dir", "results",
-                "--pretrain_path", "SEEM/checkpoints/SEEM/xdecoder_focalt_last.pt"
             ],
             "env": {"CUDA_VISIBLE_DEVICES": "3"}
         },
@@ -27,6 +26,9 @@
                 "0.0.0.0",
                 "--port",
                 "8000",
+                "train",
+                "--conf_files", "SEEM/configs/xdecoder/focall_unicl_lang.yaml",
+                "--user_dir", "results",
             ],
             "jinja": true
         }

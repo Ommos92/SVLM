@@ -12,6 +12,7 @@ sys.path.insert(0, pth)
 
 from fastapi import FastAPI
 from uvicorn import run
+import pydantic 
 
 
 import torch
@@ -45,15 +46,16 @@ from utils.visualizer import Visualizer
 from utils.distributed import init_distributed
 
 
-
-
-app = FastAPI()
-args = parse_args()
+args = None
 # SEEM Model load args 
 opt, cmdline_args = load_opt_command(args)
 if cmdline_args.user_dir:
     absolute_user_dir = os.path.abspath(cmdline_args.user_dir)
     opt['base_path'] = absolute_user_dir
+# Check if 'device' key is in the opt dictionary
+if 'device' not in opt:
+    # If not, add it
+    opt['device'] = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Pre trained Path
 pretrained_pth =  'SEEM/weights/seem_focall_v0.pt'
@@ -64,13 +66,15 @@ t = []
 t.append(transforms.Resize(512, interpolation=Image.BICUBIC))
 transform = transforms.Compose(t)
 
+app = FastAPI()
+#run(app, host="0.0.0.0", port = 8000, reload=True)
 
-class Item(BaseModel):
-    image_pth : str
-    thing_classes: List[str]
-    stuff_classes: List[str]
-    save_image: bool            #Save the image
-    output_rool: str            #path to store results
+class Item(pydantic.BaseModel):
+    image_pth : str = pydantic.Field(..., example='SEEM/inference/images/street.jpg')
+    thing_classes: List[str] = pydantic.Field(..., example=['car','person','traffic light', 'truck', 'motorcycle'])
+    stuff_classes: List[str] = pydantic.Field(..., example=['building','sky','street','tree','rock','sidewalk'])
+    save_image: bool = pydantic.Field(..., example=True)            #Save the image
+    output_root: str = pydantic.Field(..., example="path/to/output")
 
 def load_image(image_pth):
     image = Image.open(image_pth)
@@ -81,7 +85,7 @@ def load_image(image_pth):
 
 @app.post("/predict_panoseg")
 async def predict(item: Item):
-   
+
     thing_classes = item.thing_classes
     stuff_classes = item.stuff_classes
     thing_colors = [random_color(rgb=True, maximum=255).astype(np.int).tolist() for _ in range(len(thing_classes))]
@@ -115,9 +119,9 @@ async def predict(item: Item):
         outputs = model.forward(batch_inputs)
 
 
-        visual = Visualizer(image_ori, metadata=metadata)
-
+        #Save the output
         if item.save_image == True:
+            visual = Visualizer(image_ori, metadata=metadata)
             pano_seg = outputs[-1]['panoptic_seg'][0]
             pano_seg_info = outputs[-1]['panoptic_seg'][1]
 
@@ -130,25 +134,11 @@ async def predict(item: Item):
 
             demo = visual.draw_panoptic_seg(pano_seg.cpu(), pano_seg_info) # rgb Image
 
-            if not os.path.exists(output_root):
-                os.makedirs(output_root)
-            demo.save(os.path.join(output_root, 'pano.png'))
+            if not os.path.exists(item.output_root):
+                os.makedirs(item.output_root)
+            demo.save(os.path.join(item.output_root, 'pano.png'))
     
     return {"output": outputs}
 
-# def main(args = None):
-
-#     # SEEM Model load args 
-#     opt, cmdline_args = load_opt_command(args)
-#     if cmdline_args.user_dir:
-#         absolute_user_dir = os.path.abspath(cmdline_args.user_dir)
-#         opt['base_path'] = absolute_user_dir
-    
-#     # Pre trained Path
-#     pretrained_pth =  'SEEM/weights/seem_focall_v0.pt'
-#     model = BaseModel(opt, build_model(opt)).from_pretrained(pretrained_pth).eval().cuda()
-
-#     run(app, host="0.0.0.0", port = 8000)
-
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    run("model_server:app", host="0.0.0.0", port=8000, reload=True)
