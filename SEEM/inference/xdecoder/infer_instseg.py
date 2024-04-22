@@ -27,7 +27,7 @@ from detectron2.structures import BitMasks
 from modeling.BaseModel import BaseModel
 from modeling import build_model
 from detectron2.utils.colormap import random_color
-from utils.visualizer import Visualizer
+from utils.visualizer import Visualizer, ColorMode
 from utils.distributed import init_distributed
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,22 @@ def main(args=None):
         inst_seg = outputs[-1]['instances']
         inst_seg.pred_masks = inst_seg.pred_masks.cpu()
         inst_seg.pred_boxes = BitMasks(inst_seg.pred_masks > 0).get_bounding_boxes()
-        demo = visual.draw_instance_predictions(inst_seg) # rgb Image
+        
+        #demo = visual.draw_instance_predictions(inst_seg) # rgb Image
+        demo, masks = visual.mask_predictions(inst_seg)
+        
+        # Initialize an empty array of the same shape as the masks
+        summed_mask = np.zeros_like(masks[0].mask)
+
+        # Sum all masks for a singular mask
+        for mask in masks:
+            binary_mask = mask.mask.astype(np.uint8) * 255
+            summed_mask += binary_mask
+
+        # Convert the summed mask to an image
+        summed_mask_image = Image.fromarray(summed_mask)
+        # Save the image
+        summed_mask_image.save('results/penguin_output/summed_mask.png')
 
         if not os.path.exists(output_root):
             os.makedirs(output_root)
