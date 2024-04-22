@@ -24,6 +24,30 @@ from PIL import Image
 from io import BytesIO
 import re
 
+import nltk
+from nltk import word_tokenize, pos_tag, ne_chunk
+from nltk.chunk import RegexpParser
+
+import requests
+import json
+
+def extract_noun_phrases(text):
+    # Tokenize and part-of-speech tag the text
+    tagged = pos_tag(word_tokenize(text))
+
+    # Define the chunk grammar to identify noun phrases
+    grammar = "NP: {<DT>?<JJ>*<NN.*>+}"
+
+    # Parse the text
+    cp = RegexpParser(grammar)
+    tree = cp.parse(tagged)
+
+    # Extract the noun phrases
+    noun_phrases = [' '.join(leaf[0] for leaf in subtree.leaves())
+                    for subtree in tree.subtrees()
+                    if subtree.label() == 'NP']
+
+    return noun_phrases
 
 def image_parser(args):
     out = args.image_file.split(args.sep)
@@ -47,7 +71,7 @@ def load_images(image_files):
     return out
 
 
-def eval_model(args):
+def ground_model(args):
     # Model
     disable_torch_init()
 
@@ -130,7 +154,23 @@ def eval_model(args):
         )
 
     outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
-    print(outputs)
+    
+    # Using NLTK to find all of the objects in the output
+    noun_phrases = extract_noun_phrases(outputs)
+
+    # Call the SEEM API model_server to get the segmentation of the image
+    url = "http://localhost:8000/predict_instseg"
+    data = {
+        "image_pth": args.image_file,
+        "thing_classes": noun_phrases,
+        "stuff_classes": ["background"],
+        "save_image": True,
+        "output_root": "results/grounded_LLaVA"
+    }
+    response = requests.post(url, json=data)
+    print(response.json())
+
+
 
 
 if __name__ == "__main__":
@@ -147,4 +187,4 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=512)
     args = parser.parse_args()
 
-    eval_model(args)
+    ground_model(args)

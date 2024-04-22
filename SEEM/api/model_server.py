@@ -7,7 +7,7 @@ import sys
 import logging
 import argparse
 
-pth = '/home/ommos92/adv-computer-vision/SVLM/Segment-Everything-Everywhere-All-At-Once/'
+pth = '/home/ommos92/adv-computer-vision/SVLM/SEEM/'
 sys.path.insert(0, pth)
 
 from fastapi import FastAPI
@@ -31,8 +31,7 @@ from utils.constants import COCO_PANOPTIC_CLASSES
 from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
 from modeling.BaseModel import BaseModel
 from modeling import build_model
-from utils.visualizer import Visualizer
-from utils.distributed import init_distributed
+
 
 
 
@@ -115,6 +114,7 @@ async def predict_panoseg(item: Item):
                     pano_seg_info[i]['isthing'] = False
                     pano_seg_info[i]['category_id'] = metadata.stuff_dataset_id_to_contiguous_id[pano_seg_info[i]['category_id']]
 
+            # NEed to extract all of the masks from a panoptic segmentation
             demo = visual.draw_panoptic_seg(pano_seg.cpu(), pano_seg_info) # rgb Image
 
             if not os.path.exists(item.output_root):
@@ -171,6 +171,11 @@ async def predict_instseg(item: Item):
 
         # Convert the summed mask to an image
         summed_mask_image = Image.fromarray(summed_mask)
+        
+        # NEed to extract all of the masks from a panoptic segmentation
+        if not os.path.exists(item.output_root):
+            os.makedirs(item.output_root)
+        demo.save(os.path.join(item.output_root, 'pano.png'))
         
     return {"output": outputs, "mask": summed_mask_image}
 

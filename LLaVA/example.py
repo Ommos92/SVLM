@@ -13,8 +13,8 @@ from llava.eval.run_llava import eval_model
 # )
 
 model_path = "liuhaotian/llava-v1.5-7b"
-prompt = "What are the things I should be cautious about when I visit here?"
-image_file = "https://llava-vl.github.io/static/images/view.jpg"
+prompt = "List all of the objects that are in the image."
+image_file = "SEEM/inference/images/penguin.jpeg"
 
 args = type('Args', (), {
     "model_path": model_path,
@@ -30,4 +30,4 @@ args = type('Args', (), {
     "max_new_tokens": 512
 })()
 
-eval_model(args)
+results = eval_model(args)

@@ -30,3 +30,12 @@ pip install kornia
 
 # Testing with LLaVA
 pip install cog
+
+
+# Grounding LLaVA with SEEM
+Setup LLaVA using eval mode, to trigger the SEEM model for grounding
+
+Will ask LLaVA for objects in the image, then use Named Entity Relationship
+for gathering thing classes (or thing phrases) for instance segmenation.
+
+
