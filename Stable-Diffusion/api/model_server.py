@@ -9,10 +9,10 @@ from PIL import Image
 
 device = 'cuda'
 
-image = Image.open("results/penguin_output/penguins.png")
-mask_image = Image.open("results/penguin_output/summed_mask_good.png")
+image = Image.open("SEEM/inference/images/penguin.jpeg").convert("RGB")
+mask_image = Image.open("results/penguin_output/summed_mask_good.png").convert("RGB")
 
-prompt = "Otters"
+prompt = "Personify the penguins in the image."
 
 #Stable Diffusion Pipeline
 pipe = StableDiffusionInpaintPipeline.from_pretrained(
@@ -21,6 +21,11 @@ pipe = StableDiffusionInpaintPipeline.from_pretrained(
     )
 pipe = pipe.to(device) 
 
-image = pipe(prompt=prompt, image=image, mask_image=mask_image)
+image = pipe(
+    prompt=prompt, 
+    image=image, 
+    mask_image=mask_image,
+    strength=0.95,
+    ).images[0]
 
 image.save("results/penguin_output/penguins_diffused.png")
