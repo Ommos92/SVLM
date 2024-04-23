@@ -1,31 +1,41 @@
-
-from fastapi import FastAPI, File, UploadFile
-
-import numpy as np
-import torch
-
+from fastapi import FastAPI, Form
+from fastapi.responses import FileResponse
 from diffusers import StableDiffusionInpaintPipeline
 from PIL import Image
+import torch
+import numpy as np
+from typing import List
+
+app = FastAPI()
 
 device = 'cuda'
 
-image = Image.open("SEEM/inference/images/penguin.jpeg").convert("RGB")
-mask_image = Image.open("results/penguin_output/summed_mask_good.png").convert("RGB")
-
-prompt = "Personify the penguins in the image."
-
-#Stable Diffusion Pipeline
-pipe = StableDiffusionInpaintPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-2-inpainting",
-    torch_dtype=torch.float16,
+@app.post("/process_image")
+async def process_image(image_path: str, mask_image: List[List[float]], prompt: str, result_path : str):
+    # Load the pipeline
+    pipe = StableDiffusionInpaintPipeline.from_pretrained(
+        "runwayml/stable-diffusion-inpainting",
+        torch_dtype=torch.float16,
     )
-pipe = pipe.to(device) 
+    pipe = pipe.to(device)
 
-image = pipe(
-    prompt=prompt, 
-    image=image, 
-    mask_image=mask_image,
-    strength=0.95,
+    # Read the image from the provided path
+    image = Image.open(image_path).convert("RGB")
+
+    # Convert the list back to a numpy array
+    mask_image = np.array(mask_image)
+
+    # Process the image
+    result = pipe(
+        prompt=prompt,
+        image=image,
+        mask_image=mask_image,
+        strength=0.95,
     ).images[0]
 
-image.save("results/penguin_output/penguins_diffused.png")
+    # Save the result
+    result_path = "results/penguin_output/penguins_diffused.png"
+    result.save(result_path)
+
+    # Return the result as a file response
+    return FileResponse(result_path)

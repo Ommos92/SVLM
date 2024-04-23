@@ -113,4 +113,4 @@ def predict_instseg(image_path = None, thing_classes = None, stuff_classes = Non
             os.makedirs(output_root)
         demo.save(os.path.join(output_root, 'grounded_llava.png'))
         
-    return {"output": outputs, "mask": summed_mask_image}
+    return outputs, summed_mask_image 

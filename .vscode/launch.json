@@ -15,22 +15,17 @@
             ],
             "env": {"CUDA_VISIBLE_DEVICES": "3"}
         },
-        {     
-            "name": "FastAPI",
+        {
+            "name": "Launch Stable Diffusion API Server",
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
-            "args": [
-                "Segment-Everything-Everywhere-All-At-Once.api.model_server:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000",
-                "train",
-                "--conf_files", "SEEM/configs/xdecoder/focall_unicl_lang.yaml",
-                "--user_dir", "results",
-            ],
-            "jinja": true
+            "args": ["Stable-Diffusion.api.model_server:app", "--host", "0.0.0.0", "--port", "8000"],
+            "jinja": true,
+            "env": {
+                "PYTHONPATH": "~/miniconda3/envs/xformers_env/bin/python",
+                "CUDA_VISIBLE_DEVICES": "3"
+            }
         }
     ]
         
