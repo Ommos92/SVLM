@@ -32,10 +32,6 @@ from detectron2.data.datasets.builtin_meta import COCO_CATEGORIES
 from modeling.BaseModel import BaseModel
 from modeling import build_model
 
-
-
-
-
 args = None
 # SEEM Model load args 
 opt, cmdline_args = load_opt_command(args)
@@ -56,7 +52,6 @@ t = []
 t.append(transforms.Resize(512, interpolation=Image.BICUBIC))
 transform = transforms.Compose(t)
 
-app = FastAPI()
 
 class Item(pydantic.BaseModel):
     image_pth : str = pydantic.Field(..., example='SEEM/inference/images/street.jpg')
@@ -65,69 +60,10 @@ class Item(pydantic.BaseModel):
     save_image: bool = pydantic.Field(..., example=True)            #Save the image
     output_root: str = pydantic.Field(..., example="path/to/output")
 
-@app.post("/predict_panoseg")
-async def predict_panoseg(item: Item):
 
-    thing_classes = item.thing_classes
-    stuff_classes = item.stuff_classes
-    thing_colors = [random_color(rgb=True, maximum=255).astype(np.int).tolist() for _ in range(len(thing_classes))]
-    stuff_colors = [random_color(rgb=True, maximum=255).astype(np.int).tolist() for _ in range(len(stuff_classes))]
-    thing_dataset_id_to_contiguous_id = {x:x for x in range(len(thing_classes))}
-    stuff_dataset_id_to_contiguous_id = {x+len(thing_classes):x for x in range(len(stuff_classes))}
+def predict_instseg(image_path = None, thing_classes = None, stuff_classes = None, save_image = True, output_root = None):
 
-    MetadataCatalog.get("demo").set(
-        thing_colors=thing_colors,
-        thing_classes=thing_classes,
-        thing_dataset_id_to_contiguous_id=thing_dataset_id_to_contiguous_id,
-        stuff_colors=stuff_colors,
-        stuff_classes=stuff_classes,
-        stuff_dataset_id_to_contiguous_id=stuff_dataset_id_to_contiguous_id,
-    )
-    model.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(thing_classes + stuff_classes + ["background"], is_eval=False)
-    metadata = MetadataCatalog.get('demo')
-    model.model.metadata = metadata
-    model.model.sem_seg_head.num_classes = len(thing_classes + stuff_classes)
-
-    with torch.no_grad():
-        image_ori = Image.open(item.image_pth).convert("RGB")
-        width = image_ori.size[0]
-        height = image_ori.size[1]
-        image = transform(image_ori)
-        image = np.asarray(image)
-        image_ori = np.asarray(image_ori)
-        images = torch.from_numpy(image.copy()).permute(2,0,1).cuda()
-
-        batch_inputs = [{'image': images, 'height': height, 'width': width}]
-        outputs = model.forward(batch_inputs)
-
-
-        #Save the output
-        if item.save_image == True:
-            visual = Visualizer(image_ori, metadata=metadata)
-            pano_seg = outputs[-1]['panoptic_seg'][0]
-            pano_seg_info = outputs[-1]['panoptic_seg'][1]
-
-            for i in range(len(pano_seg_info)):
-                if pano_seg_info[i]['category_id'] in metadata.thing_dataset_id_to_contiguous_id.keys():
-                    pano_seg_info[i]['category_id'] = metadata.thing_dataset_id_to_contiguous_id[pano_seg_info[i]['category_id']]
-                else:
-                    pano_seg_info[i]['isthing'] = False
-                    pano_seg_info[i]['category_id'] = metadata.stuff_dataset_id_to_contiguous_id[pano_seg_info[i]['category_id']]
-
-            # NEed to extract all of the masks from a panoptic segmentation
-            demo = visual.draw_panoptic_seg(pano_seg.cpu(), pano_seg_info) # rgb Image
-
-            if not os.path.exists(item.output_root):
-                os.makedirs(item.output_root)
-            demo.save(os.path.join(item.output_root, 'pano.png'))
-    
-    return {"output": outputs}
-
-
-@app.post("/predict_instseg")
-async def predict_instseg(item: Item):
-
-    thing_classes = item.thing_classes
+    thing_classes = thing_classes
     thing_colors = [random_color(rgb=True, maximum=255).astype(int).tolist() for _ in range(len(thing_classes))]
     thing_dataset_id_to_contiguous_id = {x:x for x in range(len(thing_classes))}
 
@@ -142,7 +78,7 @@ async def predict_instseg(item: Item):
     model.model.sem_seg_head.num_classes = len(thing_classes)
 
     with torch.no_grad():
-        image_ori = Image.open(item.image_pth).convert('RGB')
+        image_ori = Image.open(image_path).convert('RGB')
         width = image_ori.size[0]
         height = image_ori.size[1]
         image = transform(image_ori)
@@ -172,11 +108,9 @@ async def predict_instseg(item: Item):
         # Convert the summed mask to an image
         summed_mask_image = Image.fromarray(summed_mask)
         
-        if not os.path.exists(item.output_root):
-            os.makedirs(item.output_root)
-        demo.save(os.path.join(item.output_root, 'pano.png'))
+        output_root = "results"
+        if not os.path.exists(output_root):
+            os.makedirs(output_root)
+        demo.save(os.path.join(output_root, 'grounded_llava.png'))
         
     return {"output": outputs, "mask": summed_mask_image}
-
-if __name__ == "__main__":
-    run("model_server:app", host="0.0.0.0", port=8000, reload=True)

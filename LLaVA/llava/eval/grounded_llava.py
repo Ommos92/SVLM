@@ -1,3 +1,9 @@
+import sys
+
+pth = '/home/ommos92/adv-computer-vision/SVLM/SEEM/'
+sys.path.insert(0, pth)
+
+
 import argparse
 import torch
 
@@ -30,6 +36,9 @@ from nltk.chunk import RegexpParser
 
 import requests
 import json
+
+
+import SEEM.api.pano_inference as SEEM
 
 def extract_noun_phrases(text):
     # Tokenize and part-of-speech tag the text
@@ -159,16 +168,16 @@ def ground_model(args):
     noun_phrases = extract_noun_phrases(outputs)
 
     # Call the SEEM API model_server to get the segmentation of the image
-    url = "http://localhost:8000/predict_instseg"
+    #url = "http://localhost:8000/predict_instseg"
     data = {
         "image_pth": args.image_file,
         "thing_classes": noun_phrases,
         "stuff_classes": ["background"],
         "save_image": True,
-        "output_root": "results/grounded_LLaVA"
+        "output_root": ""
     }
-    response = requests.post(url, json=data)
-    print(response.json())
+    response = SEEM.predict_instseg(image_path=args.image_file, thing_classes=noun_phrases, stuff_classes=["background"], save_image=True, output_root="")
+    return response
 
 
 

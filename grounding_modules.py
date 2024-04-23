@@ -16,6 +16,8 @@ from LLaVA.llava.model.builder import load_pretrained_model
 from LLaVA.llava.mm_utils import get_model_name_from_path
 from LLaVA.llava.eval.grounded_llava import ground_model
 
+import SEEM.api.pano_inference as SEEM
+
 model_path = "liuhaotian/llava-v1.5-7b"
 prompt = "List all of the objects."
 image_file = "SEEM/inference/images/penguin.jpeg"
@@ -35,7 +37,7 @@ llava_args = type('Args', (), {
 })()
 
 results = ground_model(llava_args)
-print(results)
+#print(results)
 
 
 
